@@ -130,6 +130,12 @@ export function RuleDetailsPage() {
             <StatusBadge tone={rule.status === 'Active' ? 'active' : 'inactive'} dot>
               {rule.status}
             </StatusBadge>
+            {isCustom ? (
+              <Button variant="secondary" size="sm" onClick={() => setUpdateOpen(true)}>
+                <Pencil className="h-3.5 w-3.5" />
+                Update Rule
+              </Button>
+            ) : null}
           </div>
           <div className="mt-1 flex flex-wrap items-center gap-2 text-[11px]">
             <span className="inline-flex items-center gap-1 rounded bg-slate-100 px-1.5 py-0.5 font-semibold text-slate-500">
@@ -144,16 +150,16 @@ export function RuleDetailsPage() {
         </div>
 
         <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
-          <Button variant="secondary" onClick={() => setModalOpen(true)}>
-            <PlayCircle className="h-3.5 w-3.5" />
-            Run Simulation
-          </Button>
           {isCustom ? (
-            <Button variant="outline" onClick={() => setUpdateOpen(true)}>
+            <Button variant="secondary" onClick={() => setUpdateOpen(true)}>
               <Pencil className="h-3.5 w-3.5" />
               Update Rule
             </Button>
           ) : null}
+          <Button variant="secondary" onClick={() => setModalOpen(true)}>
+            <PlayCircle className="h-3.5 w-3.5" />
+            Run Simulation
+          </Button>
           <Button variant="primary" onClick={() => setConfigOpen(true)}>
             <Settings2 className="h-3.5 w-3.5" />
             Enable Auto Approval

@@ -348,8 +348,8 @@ export function AddNewRuleWizard({ open, onClose, ruleToEdit, onUpdated }: AddNe
                 onChange={(e) => handleDomainChange(e.target.value as RuleDomain)}
                 className={fieldClass}
               >
-                <option value="Pathology">Auto Approval For Pathology Reports</option>
-                <option value="Toxicology">Auto Approval For Toxicology Reports</option>
+                <option value="Pathology">Auto approval for pathology reports</option>
+                <option value="Toxicology">Auto approval for toxicology reports</option>
               </select>
             </div>
             <div>

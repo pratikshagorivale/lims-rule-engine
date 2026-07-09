@@ -5,9 +5,12 @@ export type RuleDomain = 'Pathology' | 'Toxicology'
 export interface RuleFilters {
   ageGroup: { enabled: boolean; from: number | null; to: number | null }
   gender: { enabled: boolean; male: boolean; female: boolean; other: boolean }
-  accounts: { enabled: boolean; selectedIds: string[] }
-  department: { enabled: boolean; selected: string[] }
   patientType: { enabled: boolean; ipd: boolean; opd: boolean }
+  icdCodes: { enabled: boolean; selectedIds: string[] }
+  accounts: { enabled: boolean; selectedIds: string[] }
+  providers: { enabled: boolean; selectedIds: string[] }
+  insurance: { enabled: boolean; selectedIds: string[] }
+  instruments: { enabled: boolean; selected: string[] }
 }
 
 export interface RuleCriterion {

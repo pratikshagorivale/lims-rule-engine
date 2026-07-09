@@ -10,8 +10,8 @@ import {
   ShieldCheck,
   TrendingUp,
 } from 'lucide-react'
-import { configurableTestsByRule } from '../../data/configTests'
-import type { ConfigurableTest, TestParameter } from '../../data/types'
+import { configurableTestsByRule, registerConfigurableTests } from '../../data/configTests'
+import type { ConfigurableTest, RuleCriterion, TestParameter } from '../../data/types'
 import { Button } from '../Button'
 import { Modal } from '../Modal'
 import { SearchInput } from '../SearchInput'
@@ -34,7 +34,13 @@ interface AutoApprovalConfigPanelProps {
   serviceCount: number
   onCancel: () => void
   onSaved?: () => void
-  layout?: 'modal' | 'page'
+  layout?: 'modal' | 'page' | 'inline'
+  /** When set, delta/linearity tabs are shown only for enabled checks. */
+  criteria?: RuleCriterion[]
+}
+
+function isCheckEnabled(criteria: RuleCriterion[] | undefined, id: string): boolean {
+  return criteria?.some((c) => c.id === id && c.enabled) ?? false
 }
 
 export function AutoApprovalConfigPanel({
@@ -44,6 +50,7 @@ export function AutoApprovalConfigPanel({
   onCancel,
   onSaved,
   layout = 'modal',
+  criteria,
 }: AutoApprovalConfigPanelProps) {
   const initialTests = useMemo(
     () =>
@@ -83,6 +90,8 @@ export function AutoApprovalConfigPanel({
   }
 
   const isToxicology = domain === 'Toxicology' || ruleId === 'toxicology-auto-approval'
+  const showDeltaConfig = !isToxicology && isCheckEnabled(criteria, 'delta')
+  const showLinearityConfig = !isToxicology && isCheckEnabled(criteria, 'linearity')
 
   const setAllParams = (testId: string, patch: Partial<TestParameter>) => {
     setTests((prev) =>
@@ -91,7 +100,7 @@ export function AutoApprovalConfigPanel({
           ? {
               ...t,
               parameters: t.parameters.map((p) =>
-                isToxicology && tab === 'auto-approval' && !isRangeConfigurableParam(p)
+                isToxicology && activeTab === 'auto-approval' && !isRangeConfigurableParam(p)
                   ? p
                   : { ...p, ...patch },
               ),
@@ -129,21 +138,24 @@ export function AutoApprovalConfigPanel({
 
   const tabs: { key: ConfigTabKey; label: string; icon: typeof ShieldCheck; count: number }[] = [
     { key: 'auto-approval', label: 'Auto Approval Range', icon: ShieldCheck, count: autoRangeParams },
-    ...(!isToxicology
-      ? [
-          { key: 'delta' as const, label: 'Delta Range', icon: TrendingUp, count: deltaParams },
-          { key: 'linearity' as const, label: 'Linearity Ranges', icon: Ruler, count: linearityParams },
-        ]
+    ...(showDeltaConfig
+      ? [{ key: 'delta' as const, label: 'Delta Range', icon: TrendingUp, count: deltaParams }]
+      : []),
+    ...(showLinearityConfig
+      ? [{ key: 'linearity' as const, label: 'Linearity Ranges', icon: Ruler, count: linearityParams }]
       : []),
   ]
 
+  const activeTab = tabs.some((t) => t.key === tab) ? tab : 'auto-approval'
+
   const handleSave = () => {
+    registerConfigurableTests(ruleId, tests)
     onSaved?.()
-    if (!onSaved) setSaved(true)
+    if (!onSaved && layout !== 'inline') setSaved(true)
   }
 
   const tabToggleField = (): keyof TestParameter => {
-    switch (tab) {
+    switch (activeTab) {
       case 'delta':
         return 'deltaAllowed'
       case 'linearity':
@@ -154,7 +166,7 @@ export function AutoApprovalConfigPanel({
   }
 
   const tabToggleLabel = () => {
-    switch (tab) {
+    switch (activeTab) {
       case 'delta':
         return 'Enable Delta Check'
       case 'linearity':
@@ -171,7 +183,7 @@ export function AutoApprovalConfigPanel({
           <StatusBadge tone="info">
             {serviceCount} {domain} {serviceCount === 1 ? 'Service' : 'Services'}
           </StatusBadge>
-          {tab === 'auto-approval' && !isToxicology && (
+          {activeTab === 'auto-approval' && !isToxicology && (
             <label className="flex cursor-pointer items-center gap-2 text-[12px] text-slate-600">
               <input
                 type="checkbox"
@@ -186,7 +198,7 @@ export function AutoApprovalConfigPanel({
               Apply predefined normal ranges to all selected
             </label>
           )}
-          {tab === 'auto-approval' && isToxicology && (
+          {activeTab === 'auto-approval' && isToxicology && (
             <label className="flex cursor-pointer items-center gap-2 text-[12px] text-slate-600">
               <input
                 type="checkbox"
@@ -213,7 +225,7 @@ export function AutoApprovalConfigPanel({
         <div className="flex items-center gap-5 border-b border-slate-200">
           {tabs.map((t) => {
             const Icon = t.icon
-            const active = tab === t.key
+            const active = activeTab === t.key
             return (
               <button
                 key={t.key}
@@ -246,13 +258,13 @@ export function AutoApprovalConfigPanel({
             const isOpen = expanded.includes(test.id)
             const field = tabToggleField()
             const rangeParams =
-              isToxicology && tab === 'auto-approval'
+              isToxicology && activeTab === 'auto-approval'
                 ? test.parameters.filter(isRangeConfigurableParam)
                 : test.parameters
             const toggleParams = rangeParams.length > 0 ? rangeParams : test.parameters
             const allOn = toggleParams.every((p) => Boolean(p[field]))
             const onCount = toggleParams.filter((p) => Boolean(p[field])).length
-            const showServiceToggle = !(isToxicology && tab === 'auto-approval' && rangeParams.length === 0)
+            const showServiceToggle = !(isToxicology && activeTab === 'auto-approval' && rangeParams.length === 0)
             const numericCount = test.parameters.filter(isRangeConfigurableParam).length
             const paramSummary =
               isToxicology && numericCount === 0
@@ -308,16 +320,16 @@ export function AutoApprovalConfigPanel({
 
                 {isOpen && (
                   <>
-                    {tab === 'auto-approval' &&
+                    {activeTab === 'auto-approval' &&
                       (isToxicology ? (
                         <ToxicologyAutoApprovalTable test={test} onChange={updateParam} />
                       ) : (
                         <AutoApprovalRangeTable test={test} onChange={updateParam} />
                       ))}
-                    {tab === 'delta' && (
+                    {activeTab === 'delta' && (
                       <DeltaRangeTable test={test} onChange={updateParam} disabled={!allOn} />
                     )}
-                    {tab === 'linearity' && (
+                    {activeTab === 'linearity' && (
                       <LinearityRangeTable test={test} onChange={updateParam} disabled={!allOn} />
                     )}
                   </>
@@ -350,6 +362,19 @@ export function AutoApprovalConfigPanel({
             </div>
           </div>
         )}
+
+        {layout === 'inline' && (
+          <div className="flex flex-col gap-3 border-t border-slate-200 pt-4 sm:flex-row sm:items-center sm:justify-between">
+            <p className="flex items-start gap-1.5 text-[11px] leading-relaxed text-slate-500">
+              <Info className="mt-0.5 h-3.5 w-3.5 shrink-0 text-brand-500" />
+              Save your range settings before continuing.
+            </p>
+            <Button variant="primary" onClick={handleSave}>
+              <Save className="h-3.5 w-3.5" />
+              Save Configuration
+            </Button>
+          </div>
+        )}
       </div>
 
       {layout === 'page' ? (
@@ -364,7 +389,7 @@ export function AutoApprovalConfigPanel({
       ) : null}
 
       <Modal
-        open={saved}
+        open={saved && layout !== 'inline'}
         onClose={() => setSaved(false)}
         icon={<CheckCircle2 className="h-4 w-4 text-emerald-600" />}
         title="Rule Activated"
@@ -437,6 +462,7 @@ interface ConfigureAutoApprovalModalProps {
   ruleName: string
   domain: string
   serviceCount: number
+  criteria?: RuleCriterion[]
   onSaved?: () => void
 }
 
@@ -447,6 +473,7 @@ export function ConfigureAutoApprovalModal({
   ruleName,
   domain,
   serviceCount,
+  criteria,
   onSaved,
 }: ConfigureAutoApprovalModalProps) {
   return (
@@ -467,6 +494,7 @@ export function ConfigureAutoApprovalModal({
           ruleId={ruleId}
           domain={domain}
           serviceCount={serviceCount}
+          criteria={criteria}
           onCancel={onClose}
           onSaved={onSaved}
           layout="modal"

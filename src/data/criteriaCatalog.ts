@@ -5,36 +5,32 @@ export const criteriaCatalogByDomain: Record<RuleDomain, RuleCriterion[]> = {
     {
       id: 'range',
       label: 'Auto Approval Range Check',
-      description:
-        'Confirms every result falls inside the approved reference range configured for the test before it is released.',
-      enabled: false,
+      description: 'All parameters must be within defined auto approval range',
+      enabled: true,
+      locked: true,
     },
     {
       id: 'exception',
-      label: 'Critical Value / Exception Check',
-      description:
-        'Holds any report that carries a flagged exception, critical value or pending remark for manual review.',
+      label: 'Exceptions Check',
+      description: 'No exceptions present (On Hold, QC Fail, In Question, Not Performed)',
       enabled: false,
     },
     {
       id: 'delta',
       label: 'Delta Check',
-      description:
-        'Compares the current result with the patient’s previous result and flags unexpected shifts beyond the allowed variation.',
+      description: 'Compare with previous values for the same patient',
       enabled: false,
     },
     {
       id: 'linearity',
       label: 'Linearity Check',
-      description:
-        'Verifies results measured near instrument limits stay within the validated linear reporting range.',
+      description: 'Verify result falls within instrument linearity range',
       enabled: false,
     },
     {
-      id: 'previous-report',
-      label: 'Previous Report Comparison',
-      description:
-        'Evaluates whether the current report is consistent with the patient’s most recent comparable report.',
+      id: 'instrument-flags',
+      label: 'Instrument Flags',
+      description: 'Verifies if instrument has sent any flags and needs review',
       enabled: false,
     },
   ],
@@ -82,6 +78,6 @@ export function mergeCriteriaForEdit(
   const enabledIds = new Set(savedCriteria.map((c) => c.id))
   return cloneCriteriaForDomain(domain).map((c) => ({
     ...c,
-    enabled: enabledIds.has(c.id),
+    enabled: c.locked ? true : enabledIds.has(c.id),
   }))
 }

@@ -78,7 +78,15 @@ function formatDate(d: Date): string {
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
 }
 
-export function RunSimulationModal({ open, onClose, mappedTests, running, onRun }: RunSimulationModalProps) {
+export { RANGE_OPTIONS, fieldClass as simulationFieldClass, resolveRange, toISO as simulationToISO, formatDate as simulationFormatDate }
+
+interface RunSimulationFormProps {
+  mappedTests: MappedTest[]
+  running: boolean
+  onRun: (input: SimulationInput) => void
+}
+
+export function RunSimulationForm({ mappedTests, running, onRun }: RunSimulationFormProps) {
   const [rangeKey, setRangeKey] = useState<DateRangePreset>('this-month')
 
   const { from, to } = resolveRange(rangeKey)
@@ -96,6 +104,69 @@ export function RunSimulationModal({ open, onClose, mappedTests, running, onRun 
   }
 
   return (
+    <div className="space-y-4">
+      <div>
+        <div className="mb-1.5 flex items-center gap-1.5 text-[13px] font-semibold text-slate-700">
+          <CalendarDays className="h-3.5 w-3.5 text-slate-400" />
+          Date Range
+        </div>
+        <select value={rangeKey} onChange={(e) => setRangeKey(e.target.value as DateRangePreset)} className={fieldClass}>
+          {RANGE_OPTIONS.map((o) => (
+            <option key={o.key} value={o.key}>
+              {o.label}
+            </option>
+          ))}
+        </select>
+        <p className="mt-1.5 text-[11px] text-slate-400">{previewLabel}</p>
+      </div>
+
+      <div className="flex items-start gap-2 rounded-md border border-slate-200 bg-slate-50 px-3 py-2.5">
+        <FlaskConical className="mt-0.5 h-3.5 w-3.5 shrink-0 text-slate-400" />
+        <p className="text-[12px] leading-relaxed text-slate-600">
+          {noTests ? (
+            <>No tests are mapped to this rule. Add tests before running a simulation.</>
+          ) : (
+            <>
+              This simulation runs on all{' '}
+              <span className="font-semibold text-slate-800">{mappedTests.length}</span>{' '}
+              {mappedTests.length === 1 ? 'test' : 'tests'} mapped to this rule.
+            </>
+          )}
+        </p>
+      </div>
+
+      {unconfigured > 0 && (
+        <div className="flex items-start gap-2 rounded-md border border-brand-100 bg-brand-50/70 px-3 py-2.5">
+          <Info className="mt-0.5 h-3.5 w-3.5 shrink-0 text-brand-600" />
+          <p className="text-[12px] leading-relaxed text-brand-900/80">
+            <span className="font-semibold">{unconfigured}</span> newly added{' '}
+            {unconfigured === 1 ? 'test does' : 'tests do'} not have auto approval ranges
+            configured yet — their results will be evaluated against the defined normal ranges.
+          </p>
+        </div>
+      )}
+
+      <div className="flex justify-end border-t border-slate-100 pt-4">
+        <Button variant="primary" onClick={handleRun} disabled={running || noTests}>
+          {running ? (
+            <>
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              Running…
+            </>
+          ) : (
+            <>
+              <PlayCircle className="h-3.5 w-3.5" />
+              Run Simulation
+            </>
+          )}
+        </Button>
+      </div>
+    </div>
+  )
+}
+
+export function RunSimulationModal({ open, onClose, mappedTests, running, onRun }: RunSimulationModalProps) {
+  return (
     <Modal
       open={open}
       onClose={onClose}
@@ -104,71 +175,12 @@ export function RunSimulationModal({ open, onClose, mappedTests, running, onRun 
       description="Run this rule against historical reports to estimate how many reports would qualify for automatic approval."
       maxWidth="max-w-lg"
       footer={
-        <>
-          <Button variant="ghost" onClick={onClose} disabled={running}>
-            Cancel
-          </Button>
-          <Button variant="primary" onClick={handleRun} disabled={running || noTests}>
-            {running ? (
-              <>
-                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                Running…
-              </>
-            ) : (
-              <>
-                <PlayCircle className="h-3.5 w-3.5" />
-                Run Simulation
-              </>
-            )}
-          </Button>
-        </>
+        <Button variant="ghost" onClick={onClose} disabled={running}>
+          Cancel
+        </Button>
       }
     >
-      <div className="space-y-4">
-        {/* Date range preset */}
-        <div>
-          <div className="mb-1.5 flex items-center gap-1.5 text-[13px] font-semibold text-slate-700">
-            <CalendarDays className="h-3.5 w-3.5 text-slate-400" />
-            Date Range
-          </div>
-          <select value={rangeKey} onChange={(e) => setRangeKey(e.target.value as DateRangePreset)} className={fieldClass}>
-            {RANGE_OPTIONS.map((o) => (
-              <option key={o.key} value={o.key}>
-                {o.label}
-              </option>
-            ))}
-          </select>
-          <p className="mt-1.5 text-[11px] text-slate-400">{previewLabel}</p>
-        </div>
-
-        {/* Scope */}
-        <div className="flex items-start gap-2 rounded-md border border-slate-200 bg-slate-50 px-3 py-2.5">
-          <FlaskConical className="mt-0.5 h-3.5 w-3.5 shrink-0 text-slate-400" />
-          <p className="text-[12px] leading-relaxed text-slate-600">
-            {noTests ? (
-              <>No tests are mapped to this rule. Add tests before running a simulation.</>
-            ) : (
-              <>
-                This simulation runs on all{' '}
-                <span className="font-semibold text-slate-800">{mappedTests.length}</span>{' '}
-                {mappedTests.length === 1 ? 'test' : 'tests'} mapped to this rule.
-              </>
-            )}
-          </p>
-        </div>
-
-        {/* Normal-range note for newly added tests */}
-        {unconfigured > 0 && (
-          <div className="flex items-start gap-2 rounded-md border border-brand-100 bg-brand-50/70 px-3 py-2.5">
-            <Info className="mt-0.5 h-3.5 w-3.5 shrink-0 text-brand-600" />
-            <p className="text-[12px] leading-relaxed text-brand-900/80">
-              <span className="font-semibold">{unconfigured}</span> newly added{' '}
-              {unconfigured === 1 ? 'test does' : 'tests do'} not have auto approval ranges
-              configured yet — their results will be evaluated against the defined normal ranges.
-            </p>
-          </div>
-        )}
-      </div>
+      <RunSimulationForm mappedTests={mappedTests} running={running} onRun={onRun} />
     </Modal>
   )
 }

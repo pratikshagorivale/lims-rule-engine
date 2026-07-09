@@ -3,19 +3,23 @@ import { defaultRules } from '../data/rules'
 import {
   buildConfigurableTestsFromMapped,
   registerConfigurableTests,
+  unregisterConfigurableTests,
 } from '../data/configTests'
-import type { RuleDefinition } from '../data/types'
+import type { RuleDefinition, RuleStatus } from '../data/types'
 
 interface RulesContextValue {
   allRules: RuleDefinition[]
   getRuleById: (id: string) => RuleDefinition | undefined
   addCustomRule: (rule: RuleDefinition) => void
   updateCustomRule: (rule: RuleDefinition) => void
+  deleteCustomRule: (ruleId: string) => void
+  setRuleStatus: (ruleId: string, status: RuleStatus) => void
 }
 
 const RulesContext = createContext<RulesContextValue | null>(null)
 
 const STORAGE_KEY = 'lims-custom-rules'
+const STATUS_OVERRIDES_KEY = 'lims-rule-status-overrides'
 
 let ruleCounter = 1
 
@@ -31,6 +35,24 @@ function saveCustomRules(rules: RuleDefinition[]) {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(rules))
   } catch {
     // localStorage may be unavailable in private mode or when quota is exceeded
+  }
+}
+
+function loadStatusOverrides(): Record<string, RuleStatus> {
+  try {
+    const raw = localStorage.getItem(STATUS_OVERRIDES_KEY)
+    if (!raw) return {}
+    return JSON.parse(raw) as Record<string, RuleStatus>
+  } catch {
+    return {}
+  }
+}
+
+function saveStatusOverrides(overrides: Record<string, RuleStatus>) {
+  try {
+    localStorage.setItem(STATUS_OVERRIDES_KEY, JSON.stringify(overrides))
+  } catch {
+    // localStorage may be unavailable
   }
 }
 
@@ -64,8 +86,20 @@ export function generateCustomRuleId(existing: RuleDefinition[] = []): string {
 
 export function RulesProvider({ children }: { children: ReactNode }) {
   const [customRules, setCustomRules] = useState<RuleDefinition[]>(() => loadCustomRules())
+  const [statusOverrides, setStatusOverrides] = useState<Record<string, RuleStatus>>(
+    () => loadStatusOverrides(),
+  )
 
-  const allRules = useMemo(() => [...defaultRules, ...customRules], [customRules])
+  const allRules = useMemo(
+    () => [
+      ...defaultRules.map((rule) => ({
+        ...rule,
+        status: statusOverrides[rule.id] ?? rule.status,
+      })),
+      ...customRules,
+    ],
+    [customRules, statusOverrides],
+  )
 
   const getRuleById = useCallback(
     (id: string) => allRules.find((r) => r.id === id),
@@ -98,9 +132,36 @@ export function RulesProvider({ children }: { children: ReactNode }) {
     })
   }, [])
 
+  const deleteCustomRule = useCallback((ruleId: string) => {
+    unregisterConfigurableTests(ruleId)
+    setCustomRules((prev) => {
+      const next = prev.filter((r) => r.id !== ruleId)
+      saveCustomRules(next)
+      return next
+    })
+  }, [])
+
+  const setRuleStatus = useCallback((ruleId: string, status: RuleStatus) => {
+    const isDefault = defaultRules.some((r) => r.id === ruleId)
+    if (isDefault) {
+      setStatusOverrides((prev) => {
+        const next = { ...prev, [ruleId]: status }
+        saveStatusOverrides(next)
+        return next
+      })
+      return
+    }
+
+    setCustomRules((prev) => {
+      const next = prev.map((r) => (r.id === ruleId ? { ...r, status } : r))
+      saveCustomRules(next)
+      return next
+    })
+  }, [])
+
   const value = useMemo(
-    () => ({ allRules, getRuleById, addCustomRule, updateCustomRule }),
-    [allRules, getRuleById, addCustomRule, updateCustomRule],
+    () => ({ allRules, getRuleById, addCustomRule, updateCustomRule, deleteCustomRule, setRuleStatus }),
+    [allRules, getRuleById, addCustomRule, updateCustomRule, deleteCustomRule, setRuleStatus],
   )
 
   return <RulesContext.Provider value={value}>{children}</RulesContext.Provider>

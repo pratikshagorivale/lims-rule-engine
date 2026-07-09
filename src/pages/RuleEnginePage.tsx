@@ -5,6 +5,7 @@ import { StatusBadge } from '../components/StatusBadge'
 import { Button } from '../components/Button'
 import { AddNewRuleWizard } from '../components/addRule/AddNewRuleWizard'
 import { useRules, isCustomRule } from '../context/RulesContext'
+import { cn } from '../lib/cn'
 
 const domainStyles: Record<string, { icon: typeof FlaskConical; ring: string; bg: string; text: string }> = {
   Pathology: { icon: FlaskConical, ring: 'ring-brand-100', bg: 'bg-brand-50', text: 'text-brand-600' },
@@ -15,8 +16,7 @@ export function RuleEnginePage() {
   const { allRules } = useRules()
   const [wizardOpen, setWizardOpen] = useState(false)
 
-  const defaultRules = allRules.filter((r) => !isCustomRule(r))
-  const customRules = allRules.filter((r) => isCustomRule(r))
+  const activeCount = allRules.filter((r) => r.status === 'Active').length
 
   return (
     <div className="mx-auto w-full max-w-[1360px] px-6 py-5">
@@ -32,54 +32,19 @@ export function RuleEnginePage() {
         </Button>
       </div>
 
-      <RuleSection
-        title="Default Rules"
-        subtitle={`System-defined · ${defaultRules.length} active`}
-        rules={defaultRules}
-        badge="System Default"
-        badgeIcon={Lock}
-      />
-
-      {customRules.length > 0 && (
-        <RuleSection
-          title="Custom Rules"
-          subtitle={`User-defined · ${customRules.length} active`}
-          rules={customRules}
-          badge="Custom Rule"
-          badgeIcon={UserRound}
-        />
-      )}
-
-      <AddNewRuleWizard open={wizardOpen} onClose={() => setWizardOpen(false)} />
-    </div>
-  )
-}
-
-function RuleSection({
-  title,
-  subtitle,
-  rules,
-  badge,
-  badgeIcon: BadgeIcon,
-}: {
-  title: string
-  subtitle: string
-  rules: ReturnType<typeof useRules>['allRules']
-  badge: string
-  badgeIcon: typeof Lock
-}) {
-  return (
-    <>
-      <div className="mt-4 flex items-center justify-between">
-        <h2 className="text-[11px] font-bold uppercase tracking-wider text-slate-500">{title}</h2>
-        <span className="text-[11px] font-medium text-slate-400">{subtitle}</span>
+      <div className="mt-4 flex items-center justify-end">
+        <span className="text-[11px] font-medium text-slate-400">
+          {activeCount} of {allRules.length} active
+        </span>
       </div>
 
       <div className="mt-2.5 space-y-3">
-        {rules.map((rule) => {
+        {allRules.map((rule) => {
+          const custom = isCustomRule(rule)
           const style = domainStyles[rule.domain] ?? domainStyles.Pathology
           const Icon = style.icon
-          const activeChecks = rule.criteria.filter((c) => c.enabled).length
+          const BadgeIcon = custom ? UserRound : Lock
+
           return (
             <Link
               key={rule.id}
@@ -95,7 +60,7 @@ function RuleSection({
               <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-center gap-2">
                   <h3 className="text-[14px] font-semibold leading-snug text-slate-900">{rule.name}</h3>
-                  <StatusBadge tone={rule.status === 'Active' ? 'active' : 'neutral'} dot>
+                  <StatusBadge tone={rule.status === 'Active' ? 'active' : 'inactive'} dot>
                     {rule.status}
                   </StatusBadge>
                 </div>
@@ -103,15 +68,19 @@ function RuleSection({
                   {rule.description}
                 </p>
                 <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px]">
-                  <span className="inline-flex items-center gap-1 rounded bg-slate-100 px-1.5 py-0.5 font-semibold text-slate-500">
+                  <span
+                    className={cn(
+                      'inline-flex items-center gap-1 rounded px-1.5 py-0.5 font-semibold',
+                      custom
+                        ? 'bg-amber-100 text-amber-800 ring-1 ring-inset ring-amber-600/20'
+                        : 'bg-slate-100 text-slate-500',
+                    )}
+                  >
                     <BadgeIcon className="h-2.5 w-2.5" />
-                    {badge}
+                    {custom ? 'Custom Rule' : 'System Default'}
                   </span>
                   <span className="text-slate-400">
                     <span className="font-bold text-slate-700">{rule.mappedTests.length}</span> tests mapped
-                  </span>
-                  <span className="text-slate-400">
-                    <span className="font-bold text-slate-700">{activeChecks}</span> active checks
                   </span>
                 </div>
               </div>
@@ -126,6 +95,8 @@ function RuleSection({
           )
         })}
       </div>
-    </>
+
+      <AddNewRuleWizard open={wizardOpen} onClose={() => setWizardOpen(false)} />
+    </div>
   )
 }

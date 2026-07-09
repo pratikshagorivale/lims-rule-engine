@@ -53,6 +53,7 @@ export function AutoApprovalConfigPage() {
           ruleId={rule.id}
           domain={rule.domain}
           serviceCount={initialTests.length}
+          criteria={rule.criteria}
           onCancel={() => window.history.back()}
           layout="page"
         />

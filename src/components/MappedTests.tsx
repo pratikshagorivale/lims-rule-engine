@@ -8,6 +8,8 @@ interface MappedTestsProps {
   catalog: MappedTest[]
   onAdd: (test: MappedTest) => void
   onRemove: (id: string) => void
+  /** Tests already mapped to a different rule — cannot be added here. */
+  claimedByOther?: Map<string, { ruleName: string }>
   /** Pathology shows delta & linearity columns; toxicology does not */
   showDeltaLinearity?: boolean
 }
@@ -17,6 +19,7 @@ export function MappedTests({
   catalog,
   onAdd,
   onRemove,
+  claimedByOther,
   showDeltaLinearity = true,
 }: MappedTestsProps) {
   const [expanded, setExpanded] = useState(true)
@@ -25,7 +28,10 @@ export function MappedTests({
   const wrapRef = useRef<HTMLDivElement>(null)
 
   const mappedIds = useMemo(() => new Set(mapped.map((m) => m.id)), [mapped])
-  const availableCount = catalog.length - mapped.length
+  const availableCount = useMemo(
+    () => catalog.filter((t) => !mappedIds.has(t.id) && !claimedByOther?.has(t.id)).length,
+    [catalog, mappedIds, claimedByOther],
+  )
 
   const q = query.trim().toLowerCase()
   const results = useMemo(
@@ -123,22 +129,36 @@ export function MappedTests({
                   ) : (
                     results.map((t) => {
                       const checked = mappedIds.has(t.id)
+                      const claim = claimedByOther?.get(t.id)
+                      const disabled = Boolean(claim) && !checked
                       return (
                         <label
                           key={t.id}
-                          className="flex cursor-pointer items-center gap-2.5 px-3 py-2 transition-colors hover:bg-brand-50"
+                          className={cn(
+                            'flex items-center gap-2.5 px-3 py-2 transition-colors',
+                            disabled
+                              ? 'cursor-not-allowed bg-slate-50/80 opacity-70'
+                              : 'cursor-pointer hover:bg-brand-50',
+                          )}
                         >
                           <input
                             type="checkbox"
                             checked={checked}
-                            onChange={() => (checked ? onRemove(t.id) : onAdd(t))}
-                            className="h-4 w-4 shrink-0 rounded border-slate-300 accent-brand-600"
+                            disabled={disabled}
+                            onChange={() => {
+                              if (disabled) return
+                              if (checked) onRemove(t.id)
+                              else onAdd(t)
+                            }}
+                            className="h-4 w-4 shrink-0 rounded border-slate-300 accent-brand-600 disabled:cursor-not-allowed"
                           />
                           <span className="min-w-0">
                             <span className="block truncate text-[13px] font-medium text-slate-800">
                               {t.name}
                             </span>
-                            <span className="block text-[11px] text-slate-400">{t.department}</span>
+                            <span className="block text-[11px] text-slate-400">
+                              {claim ? `Mapped to ${claim.ruleName}` : t.department}
+                            </span>
                           </span>
                         </label>
                       )

@@ -40,7 +40,7 @@ interface SimulationResultsProps {
   ruleId: string
   domain?: string
   onReRun: () => void
-  /** When true, only summary cards are shown (for wizard step 5). */
+  /** When true, hides export/re-run toolbar (wizard embeds its own controls). */
   compact?: boolean
 }
 
@@ -135,12 +135,10 @@ export function SimulationResults({
         />
       </div>
 
-      {compact ? null : (
-        <>
       {/* Failure reason chart */}
-      <div className="rounded-lg border border-slate-200 bg-white p-4 card-shadow">
+      <div className={cn('rounded-lg border border-slate-200 bg-white card-shadow', compact ? 'p-3' : 'p-4')}>
         <h3 className="text-[13px] font-semibold text-slate-800">Reasons for Manual Review</h3>
-        <p className="mb-4 text-[11px] text-slate-400">
+        <p className={cn('text-[11px] text-slate-400', compact ? 'mb-3' : 'mb-4')}>
           Why {result.manualReview.toLocaleString()} reports did not qualify for auto approval
         </p>
         <FailureBarChart data={result.failureBreakdown} />
@@ -163,9 +161,9 @@ export function SimulationResults({
           />
         </div>
 
-        <div className="overflow-x-auto">
+        <div className={cn('overflow-x-auto', compact && 'max-h-56 overflow-y-auto')}>
           <table className="w-full text-[13px]">
-            <thead>
+            <thead className={compact ? 'sticky top-0 z-10 bg-slate-50' : undefined}>
               <tr className="border-b border-slate-200 bg-slate-50 text-left text-[11px] font-semibold uppercase tracking-wide text-slate-500">
                 <th className="px-4 py-2">Patient Name</th>
                 <th className="px-4 py-2">Test</th>
@@ -226,17 +224,13 @@ export function SimulationResults({
           </table>
         </div>
       </div>
-        </>
-      )}
 
-      {compact ? null : (
-        <SimulationStatusModal
-          report={detail}
-          ruleId={ruleId}
-          domain={domain}
-          onClose={() => setDetail(null)}
-        />
-      )}
+      <SimulationStatusModal
+        report={detail}
+        ruleId={ruleId}
+        domain={domain}
+        onClose={() => setDetail(null)}
+      />
     </div>
   )
 }

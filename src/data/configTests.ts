@@ -120,6 +120,10 @@ export function registerConfigurableTests(ruleId: string, tests: ConfigurableTes
   configurableTestsByRule[ruleId] = tests
 }
 
+export function unregisterConfigurableTests(ruleId: string) {
+  delete configurableTestsByRule[ruleId]
+}
+
 export function buildConfigurableTestsFromMapped(
   mapped: { id: string; name: string; department: string }[],
   domain: 'Pathology' | 'Toxicology',

@@ -90,8 +90,9 @@ function toxicologyChecks(report: SimulationReportRow): CheckResult[] {
 export function buildSimulationChecks(
   report: SimulationReportRow,
   ruleId?: string,
+  domain?: string,
 ): CheckResult[] {
-  if (ruleId === 'toxicology-auto-approval') {
+  if (domain === 'Toxicology' || ruleId === 'toxicology-auto-approval') {
     return toxicologyChecks(report)
   }
   return pathologyChecks(report)

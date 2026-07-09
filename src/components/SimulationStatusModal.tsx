@@ -9,6 +9,7 @@ import type { ReportStatus, SimulationReportRow } from '../data/types'
 interface SimulationStatusModalProps {
   report: SimulationReportRow | null
   ruleId: string
+  domain?: string
   onClose: () => void
 }
 
@@ -26,11 +27,11 @@ function reportStatusTone(status: ReportStatus) {
   }
 }
 
-export function SimulationStatusModal({ report, ruleId, onClose }: SimulationStatusModalProps) {
+export function SimulationStatusModal({ report, ruleId, domain, onClose }: SimulationStatusModalProps) {
   if (!report) return null
 
   const autoApproved = report.status === 'Auto Approved'
-  const checks = buildSimulationChecks(report, ruleId)
+  const checks = buildSimulationChecks(report, ruleId, domain)
 
   return (
     <Modal

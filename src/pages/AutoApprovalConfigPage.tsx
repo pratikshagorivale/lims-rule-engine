@@ -1,12 +1,13 @@
 import { Link, useParams } from 'react-router-dom'
-import { getRuleById } from '../data/rules'
 import { Breadcrumbs } from '../components/Breadcrumbs'
 import { AutoApprovalConfigPanel } from '../components/autoApprovalConfig/AutoApprovalConfigPanel'
 import { configurableTestsByRule } from '../data/configTests'
 import { useMemo } from 'react'
+import { useRules } from '../context/RulesContext'
 
 export function AutoApprovalConfigPage() {
   const { ruleId = '' } = useParams()
+  const { getRuleById } = useRules()
   const rule = getRuleById(ruleId)
 
   const initialTests = useMemo(

@@ -1,4 +1,5 @@
-import type { MappedTest } from './types'
+import type { MappedTest, RuleDomain } from './types'
+import { rules } from './rules'
 
 // Additional laboratory tests available to map onto each default rule.
 // These are the tests surfaced by the "add tests" search on the rule details
@@ -45,3 +46,28 @@ export const extraTestsByRule: Record<string, MappedTest[]> = {
     { id: 'x-mor', name: 'Morphine (Confirmation)', department: 'Toxicology', autoApprovalRange: true, deltaCheck: true, linearityCheck: true },
   ],
 }
+
+/** All tests available when mapping tests in the custom-rule wizard. */
+export function testsByDomain(domain: RuleDomain): MappedTest[] {
+  const seen = new Set<string>()
+  const merged: MappedTest[] = []
+
+  for (const rule of rules) {
+    if (rule.domain !== domain) continue
+    for (const test of rule.mappedTests) {
+      if (!seen.has(test.id)) {
+        seen.add(test.id)
+        merged.push(test)
+      }
+    }
+    for (const test of extraTestsByRule[rule.id] ?? []) {
+      if (!seen.has(test.id)) {
+        seen.add(test.id)
+        merged.push(test)
+      }
+    }
+  }
+
+  return merged.sort((a, b) => a.name.localeCompare(b.name))
+}
+

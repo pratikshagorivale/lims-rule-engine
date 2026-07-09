@@ -1,5 +1,15 @@
 export type RuleStatus = 'Active' | 'Inactive'
 
+export type RuleDomain = 'Pathology' | 'Toxicology'
+
+export interface RuleFilters {
+  ageGroup: { enabled: boolean; from: number | null; to: number | null }
+  gender: { enabled: boolean; male: boolean; female: boolean; other: boolean }
+  accounts: { enabled: boolean; selectedIds: string[] }
+  department: { enabled: boolean; selected: string[] }
+  patientType: { enabled: boolean; ipd: boolean; opd: boolean }
+}
+
 export interface RuleCriterion {
   id: string
   label: string
@@ -20,11 +30,15 @@ export interface MappedTest {
 export interface RuleDefinition {
   id: string
   name: string
-  domain: string
+  domain: RuleDomain
   description: string
   status: RuleStatus
   criteria: RuleCriterion[]
   mappedTests: MappedTest[]
+  /** Custom rules created via the Add New Rule wizard */
+  isCustom?: boolean
+  /** Scope filters — when none are enabled the rule applies to all reports */
+  filters?: RuleFilters
   /** Override the default "Rule Logic" section heading */
   ruleLogicHeading?: string
   /** Override the default rule logic subtitle */

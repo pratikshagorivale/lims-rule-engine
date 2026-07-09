@@ -82,7 +82,7 @@ export function AutoApprovalConfigPanel({
     )
   }
 
-  const isToxicology = ruleId === 'toxicology-auto-approval'
+  const isToxicology = domain === 'Toxicology' || ruleId === 'toxicology-auto-approval'
 
   const setAllParams = (testId: string, patch: Partial<TestParameter>) => {
     setTests((prev) =>
@@ -138,8 +138,8 @@ export function AutoApprovalConfigPanel({
   ]
 
   const handleSave = () => {
-    setSaved(true)
     onSaved?.()
+    if (!onSaved) setSaved(true)
   }
 
   const tabToggleField = (): keyof TestParameter => {
@@ -437,6 +437,7 @@ interface ConfigureAutoApprovalModalProps {
   ruleName: string
   domain: string
   serviceCount: number
+  onSaved?: () => void
 }
 
 export function ConfigureAutoApprovalModal({
@@ -446,6 +447,7 @@ export function ConfigureAutoApprovalModal({
   ruleName,
   domain,
   serviceCount,
+  onSaved,
 }: ConfigureAutoApprovalModalProps) {
   return (
     <Modal
@@ -454,7 +456,7 @@ export function ConfigureAutoApprovalModal({
       icon={<ShieldCheck className="h-4 w-4" />}
       title="Configure Auto Approval for Selected Services"
       description={
-        ruleId === 'toxicology-auto-approval'
+        ruleId === 'toxicology-auto-approval' || domain === 'Toxicology'
           ? `Review mapped tests and configure ranges only where numeric parameters apply for ${ruleName}.`
           : `Set ranges for ${ruleName} after reviewing simulation results.`
       }
@@ -466,6 +468,7 @@ export function ConfigureAutoApprovalModal({
           domain={domain}
           serviceCount={serviceCount}
           onCancel={onClose}
+          onSaved={onSaved}
           layout="modal"
         />
       )}

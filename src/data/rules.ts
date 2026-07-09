@@ -100,3 +100,5 @@ export const rules: RuleDefinition[] = [
 export function getRuleById(id: string): RuleDefinition | undefined {
   return rules.find((r) => r.id === id)
 }
+
+export const defaultRules = rules

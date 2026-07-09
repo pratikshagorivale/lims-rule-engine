@@ -115,3 +115,62 @@ export const configurableTestsByRule: Record<string, ConfigurableTest[]> = {
     },
   ],
 }
+
+export function registerConfigurableTests(ruleId: string, tests: ConfigurableTest[]) {
+  configurableTestsByRule[ruleId] = tests
+}
+
+export function buildConfigurableTestsFromMapped(
+  mapped: { id: string; name: string; department: string }[],
+  domain: 'Pathology' | 'Toxicology',
+): ConfigurableTest[] {
+  return mapped.map((test) => {
+    const isTox = domain === 'Toxicology'
+    const isQualitative =
+      isTox && (test.name.includes('Screen') || test.name.includes('Benzodiazepines'))
+
+    if (isQualitative && !test.name.includes('Confirmation')) {
+      return {
+        id: test.id,
+        name: test.name,
+        department: test.department,
+        specimen: 'Urine',
+        parameters: [
+          {
+            id: `${test.id}-p1`,
+            name: test.name.replace(/ Screen$/, ''),
+            unit: '—',
+            type: 'List Field',
+            autoMin: null,
+            autoMax: null,
+            deltaPercent: null,
+            deltaAllowed: false,
+            linearityEnabled: false,
+            autoApprovalRangeEnabled: false,
+          },
+        ],
+      }
+    }
+
+    return {
+      id: test.id,
+      name: test.name,
+      department: test.department,
+      specimen: isTox ? 'Urine' : 'Serum',
+      parameters: [
+        {
+          id: `${test.id}-p1`,
+          name: test.name,
+          unit: isTox ? 'ng/mL' : '—',
+          type: 'Numeric',
+          autoMin: 0,
+          autoMax: isTox ? 500 : 100,
+          deltaPercent: isTox ? null : 20,
+          deltaAllowed: false,
+          linearityEnabled: false,
+          autoApprovalRangeEnabled: false,
+        },
+      ],
+    }
+  })
+}

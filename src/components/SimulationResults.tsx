@@ -38,10 +38,21 @@ interface SimulationResultsProps {
   rangeLabel: string
   ruleName: string
   ruleId: string
+  domain?: string
   onReRun: () => void
+  /** When true, only summary cards are shown (for wizard step 5). */
+  compact?: boolean
 }
 
-export function SimulationResults({ result, rangeLabel, ruleName, ruleId, onReRun }: SimulationResultsProps) {
+export function SimulationResults({
+  result,
+  rangeLabel,
+  ruleName,
+  ruleId,
+  domain,
+  onReRun,
+  compact = false,
+}: SimulationResultsProps) {
   const [query, setQuery] = useState('')
   const [detail, setDetail] = useState<SimulationReportRow | null>(null)
 
@@ -55,7 +66,8 @@ export function SimulationResults({ result, rangeLabel, ruleName, ruleId, onReRu
   })
 
   return (
-    <div className="animate-fade-in space-y-4">
+    <div className={cn('animate-fade-in', compact ? 'space-y-4' : 'space-y-4')}>
+      {!compact && (
       <div className="flex flex-wrap items-center justify-between gap-2 border-t border-slate-200 pt-4">
         <div className="flex items-center gap-2">
           <div className="flex h-7 w-7 items-center justify-center rounded-md bg-brand-50 text-brand-600">
@@ -81,15 +93,29 @@ export function SimulationResults({ result, rangeLabel, ruleName, ruleId, onReRu
           </Button>
         </div>
       </div>
+      )}
+
+      {compact && (
+        <div className="flex items-center gap-2 border-b border-slate-200/80 pb-3">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-white text-brand-600 shadow-sm">
+            <FileBarChart className="h-4 w-4" />
+          </div>
+          <div>
+            <p className="text-[13px] font-semibold text-slate-800">Results summary</p>
+            <p className="text-[11px] text-slate-500">{rangeLabel}</p>
+          </div>
+        </div>
+      )}
 
       {/* Summary cards */}
-      <div className="grid gap-3 sm:grid-cols-3">
+      <div className={cn('grid gap-3', compact ? 'sm:grid-cols-3' : 'sm:grid-cols-3')}>
         <SummaryCard
           label="Total Reports"
           value={result.totalReports}
           icon={<ClipboardList className="h-4 w-4" />}
           tone="slate"
           hint="Historical reports in scope"
+          compact={compact}
         />
         <SummaryCard
           label="Eligible for Auto Approval"
@@ -97,6 +123,7 @@ export function SimulationResults({ result, rangeLabel, ruleName, ruleId, onReRu
           icon={<CheckCircle2 className="h-4 w-4" />}
           tone="emerald"
           hint={`${result.eligibleRate}% of total reports`}
+          compact={compact}
         />
         <SummaryCard
           label="Requires Manual Review"
@@ -104,9 +131,12 @@ export function SimulationResults({ result, rangeLabel, ruleName, ruleId, onReRu
           icon={<Eye className="h-4 w-4" />}
           tone="rose"
           hint={`${(100 - result.eligibleRate).toFixed(1)}% of total reports`}
+          compact={compact}
         />
       </div>
 
+      {compact ? null : (
+        <>
       {/* Failure reason chart */}
       <div className="rounded-lg border border-slate-200 bg-white p-4 card-shadow">
         <h3 className="text-[13px] font-semibold text-slate-800">Reasons for Manual Review</h3>
@@ -196,9 +226,17 @@ export function SimulationResults({ result, rangeLabel, ruleName, ruleId, onReRu
           </table>
         </div>
       </div>
+        </>
+      )}
 
-      {/* Simulation status modal */}
-      <SimulationStatusModal report={detail} ruleId={ruleId} onClose={() => setDetail(null)} />
+      {compact ? null : (
+        <SimulationStatusModal
+          report={detail}
+          ruleId={ruleId}
+          domain={domain}
+          onClose={() => setDetail(null)}
+        />
+      )}
     </div>
   )
 }
@@ -209,12 +247,14 @@ function SummaryCard({
   icon,
   tone,
   hint,
+  compact = false,
 }: {
   label: string
   value: number
   icon: React.ReactNode
   tone: 'slate' | 'emerald' | 'rose'
   hint: string
+  compact?: boolean
 }) {
   const tones = {
     slate: { bg: 'bg-slate-100', text: 'text-slate-600' },
@@ -222,7 +262,7 @@ function SummaryCard({
     rose: { bg: 'bg-rose-50', text: 'text-rose-600' },
   }
   return (
-    <div className="rounded-lg border border-slate-200 bg-white p-3.5 card-shadow">
+    <div className={cn('rounded-lg border border-slate-200 bg-white card-shadow', compact ? 'p-4' : 'p-3.5')}>
       <div className="flex items-center justify-between">
         <p className="text-[12px] font-medium text-slate-500">{label}</p>
         <div className={cn('flex h-7 w-7 items-center justify-center rounded-md', tones[tone].bg, tones[tone].text)}>

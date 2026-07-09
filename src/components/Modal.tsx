@@ -75,7 +75,7 @@ export function Modal({
             </button>
           </div>
 
-          <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 py-4">
+          <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 py-5 sm:px-6 sm:py-5">
             {children}
           </div>
 

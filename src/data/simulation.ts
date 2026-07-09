@@ -66,10 +66,19 @@ function hashSeed(input: string): number {
 export function runSimulation(
   ruleId: string,
   input: SimulationInput,
+  domain?: string,
 ): SimulationResult {
-  const pool = reportPools[ruleId] ?? []
+  const pool =
+    reportPools[ruleId] ??
+    (domain === 'Toxicology'
+      ? reportPools['toxicology-auto-approval']
+      : reportPools['pathology-auto-approval'])
   const rows = pool
-  const failureOrder = failureOrderForRule(ruleId)
+  const failureOrder = failureOrderForRule(
+    ruleId.startsWith('custom-') && domain === 'Toxicology'
+      ? 'toxicology-auto-approval'
+      : ruleId,
+  )
 
   const seed = hashSeed(`${ruleId}|${input.rangeKey}`)
   const volumeFactor = 60 + (seed % 40)
